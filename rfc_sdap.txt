@@ -1,0 +1,481 @@
+ROBERT DE ST VINCENT Guillaume                      Informatique - Annuaire Partagé
+STRMSEK Nicolas                                                     Année 2017/2018
+OLIVIER Thomas
+
+
+                          ---- Request For Comment SDAP ----
+
+
+Résumé :
+    Simply Directory Access Protocol (SDAP) est un annuaire de partagé.
+
+Nouveautés version 2 :
+    Voici les changements par rapport à la première version.
+    Tout d'abord la mise en forme du document permet de définir plus clairement
+    les différentes parties de la RFC. Une table des matières permet de structurer
+    le document et d'indiquer les pages des différentes parties.
+    Au niveau du protocole seul le formatage des données passées en paramètre change.
+    Ainsi chaque paramètre est séparé par une tabulation, "<TAB>" au lieu d'un
+    simple espace avant.
+    De plus les champs <id_request> et <id_response> sont supprimés du protocole, qui
+    n'est pas utilisé.
+
+
+Tables des matières :
+
+  1. Introduction ..............................................................  1
+     1.1  Objectif .............................................................  1
+     1.2  Terminologie .........................................................  2
+  2. Protocole .................................................................  3
+     2.1  Requête ..............................................................  3
+     2.2  Réponse ..............................................................  3
+  3. Définition des commandes ..................................................  3
+     3.1  Commande : C (connexion) .............................................  3
+     3.2  Commande : D (déconnexion) ...........................................  4
+     3.3  Commande : SR (rechercher annuaire) ..................................  4
+     3.4  Commande : SC (rechercher contact) ...................................  4
+     3.5  Commande : AA (ajouter compte utilisateur) ...........................  4
+     3.6  Commande : AR (ajouter annuaire) .....................................  5
+     3.7  Commande : AC (ajouter contact) ......................................  5
+     3.8  Commande : MA (modifier compte utilisateur) ..........................  5
+     3.9  Commande : MR (modifier annuaire) ....................................  5
+     3.10 Commande : MC (modifier contact) .....................................  5
+     3.11 Commande : DA (supprimer compte utilisateur) .........................  6
+     3.12 Commande : DR (supprimer annuaire) ...................................  6
+     3.13 Commande : DC (supprimer contact) ....................................  6
+  4. Code de retour ............................................................  6
+  5. Droits utilisateur ........................................................  7
+     5.1  Utilisateur annonyme .................................................  7
+     5.2  Utilisateur identifié ................................................  7
+  6. Exemples ..................................................................  7
+     6.1  Connection au serveur ................................................  7
+     6.2  Echange de données ...................................................  7
+
+  1.  Introduction
+
+  1.1  Objectif
+
+      Un annuaire partagé est une base de données qui regroupe différentes
+      informations concernant des contacts regroupés au sein d'un annuaire. Ainsi
+      chaque utilisateur peut intérroger le serveur pour demander des informations
+      suivant une recherche. Un utilisateur peut aussi ajouter, modifier ou
+      supprimer des annuaires et/ou des contact.
+
+
+
+
+RFC SDAP - Annuaire Partagé - 2018                                     [Page 1 - 7]
+
+  1.2  Terminologie
+
+      Cette spécification utilise un certain nombre de termes pour désigner les
+      rôles joués par les participants et les objets lors de la communication du
+      protocole SDAP.
+
+      Commande : (command)
+
+        Désigne la commande utilisée pour réaliser une action spécifique sur le
+        serveur (comme définit dans la partie 3).
+
+      Requête : (request)
+
+        Un message reçu par le serveur ou envoyé par un client dont la syntaxe
+        respecte la spécification du protocole SDAP.
+
+      Réponse : (response)
+
+        Un message émis par le serveur ou reçu par un client dont la syntaxe
+        respecte la spécification du protocole SDAP.
+
+      Utilisateur :
+
+        Un utilisateur est une personne qui c'est connectée au serveur. Il peut
+        être soit anonyme soit identifié.
+
+      Utilisateur annonyme :
+
+        Un utilisateur anonyme est une personne connectée au serveur mais qui
+        n'a pas renseigné de nom. Il aura accès aux annuaires qu'en mode lecture.
+        Un utilisateur anonyme est associé à un identifiant utilisateur 0.
+
+      Utilisateur identifié :
+
+        Un utilisateur identifié est une personne connectée au serveur en
+        renseignant un nom et un mot de passe. Il peut en plus d'un utilisateur
+        anonyme ajouter, modifier et supprimer des annuaires et/ou contacts dont
+        il est le propriétaire.
+
+      Session utilisateur :
+
+        Une session utilisateur permet de mettre en relation un utilisateur et un
+        compte utilisateur. On lui associe un identificateur de session lors de la
+        connexion pour qu'il puisse effectuer des actions dans pendant une durée
+        déterminée (jusqu'à sa déconnexion).
+
+
+      Identificateur de session : (id session)
+
+        Désigne un identifiant unique que l'on demande au serveur pour pouvoir
+        communiquer avec lui pendant un durée déterminée.
+
+      Annuaire : (repertory)
+
+        Un annuaire est un regroupement de contacts au sein de l'annuaire partagé.
+        Il possède un propriétaire qui est un utilisateur identifié.
+
+      Contact :
+
+        Un contact est associé à un annuaire. Il est défini par 8 champs,
+        un nom, un prénom, une adresse mail, un numéro de téléphone, un numéro de
+        téléphone professionnel, une adresse postale, une date de naissance, et
+        une note.
+        Seul les champs nom, prénom et adresse mail sont obligatoires pour la
+        création d'un contact dans un annuaire.
+
+
+RFC SDAP - Annuaire Partagé - 2018                                     [Page 2 - 7]
+
+  2.  Protocole
+
+  2.1  Requête
+
+      La syntaxe d'une requête est la suivante :
+
+        <id_session> <command> [<data>]
+
+      id_session :
+
+        L'identifiant unique demandé par l'utilisateur qu'il utilisera
+        pendant tous ces échanges.
+
+      command :
+
+        Type de commande souhaitée.
+
+      data :
+
+        Paramètres obtionnels ou obligatoires suivant la commande utilisée. Chaque
+        donnée renseignée est espacée d'un caractère tabulation, <TAB>.
+
+
+  2.2  Réponse
+
+      La syntaxe d'une réponse est la suivante :
+
+        <status_code> [<data>]
+
+      status_code :
+
+        Code de retour suite à une requête. Les différents codes sont décrits
+        dans la partie 4.
+
+      data :
+
+        Le code d'erreur peut être agrémenté d'un commentaire sur la nature
+        précise de l'erreur, pour indiquer précisément à l'utilisateur. 
+        Chaque donnée renseignée est espacée d'un caractère tabulation, <TAB>.
+
+
+  3. Définitions des commandes
+
+  3.1  Commande : C (connexion)
+
+      Pour commencer à dialoguer avec le serveur il faut tout d'abord
+      s'identifier, en tant qu'anonyme (sans information) ou en tant
+      qu'utilisateur enregistré.
+      Cette commande permet d'ouvrir une session utilisateur.
+
+      Pour pouvoir se connecter, on utilise la requête "C".
+
+      En tant qu'anonyme on n'a pas besoin de spécifier de paramètre.
+
+        <id_session> C
+
+      Si on veut se connecter à un compte utilisateur, il faut renseigner en plus
+
+        <id_session> C {name}<TAB>{password}
+
+      On autorise la connexion simultanée de plusieurs clients sur le même
+      compte.
+
+      L'utilisation du mode annonyme/connecté permet de définir le niveau de droit
+      de l'utilisateur. (Cette partie est détaillée dans la section 4)
+
+
+RFC SDAP - Annuaire Partagé - 2018                                     [Page 3 - 7]
+
+
+  3.2  Commande : D (déconnexion)
+
+      Après la phase de connection, l'utilisateur doit se déconnecter de sa
+      session. La commande "D" permet de déconnecter la session utilisateur.
+
+      Voici la syntaxe de la commande :
+
+        <id_session> D
+
+
+  3.3  Commande : SR (rechercher annuaire)
+
+      Cette commande demande au serveur de rechercher les annuaires. On peut
+      spécifier une donnée ou non. Le serveur renvoie une réponse avec toutes
+      les données recherchées.
+
+      Voici la syntaxe pour lister tout les annuaires du serveur :
+
+        <id_session> SR
+
+      On peut aussi demander au serveur de rechercher les annuaires suivant un mot
+      ou un caractère dont le nom serait composé. Voici la syntaxe générale :
+
+        <id_session> SR {mot_cle}
+
+      Voici un exemple qui demande de rechercher tous les annuaires dont une
+      occurence de la chaine de caractère "annua" se trouve dans le nom des
+      annuaires.
+
+        <id_session> SR annu
+
+
+  3.4  Commande : SC (rechercher contact)
+
+      Cette commande demande au serveur de rechercher un contact dans un annuaire
+      spécifié. On peut spécifier une donnée contact ou non. Le nom d'un annuaire
+      est obligatoire pour rechercher dedans.
+
+      Voici la syntaxe pour lister tout les contacts d'un annuaire :
+
+        <id_session> SR {nom_annuaire}
+
+      On peut aussi demander au serveur de rechercher les contacts d'un annuaire.
+      La chaine de caractère spécifiée recherchera dans les champs nom, prénom et
+      addresse mail pour vérifier s'il la recherche correspond au contact.
+      Voici la syntaxe générale :
+
+        <id_session> SR {nom_annuaire}<TAB>{mot_cle}
+
+
+  3.5  Commande : AA (ajouter compte utilisateur)
+
+      Cette commande demande au serveur de créer un compte utilisateur en
+      spécifiant un nom d'utilisateur et un mot de passe.
+      Pour pouvoir créer un compte utilisateur, il faut être connecté en tant
+      qu'utilisateur anonyme au minimum.
+
+      Voici la syntaxe générale :
+
+        <id_session> SR {nom_utilisateur}<TAB>{mot_de_passe}
+
+
+
+
+
+
+RFC SDAP - Annuaire Partagé - 2018                                     [Page 4 - 7]
+
+
+  3.6  Commande : AR (ajouter annuaire)
+
+      Cette commande demande au serveur de créer un nouvel annuaire en spécifiant
+      un nom d'annuaire. Chaque annuaire est unique, il ne peut y avoir deux
+      annuaires portant le même nom.
+      Le propriétaire de l'annuaire est celui qui le utilise la commande.
+
+      Voici la syntaxe générale :
+
+        <id_session> AR {nom_annuaire}
+
+
+  3.7  Commande : AC (ajouter contact)
+
+      Cette commande demande au serveur de créer un nouveau contact pour un
+      annuaire spécifié. Chaque contact dans un annuaire est unique, on ne peut
+      avoir deux contacts qui ont les données nom, prénom, mail identique.
+
+      Seul le propriétaire de l'annuaire peut ajouter un contact.
+
+      Voici la syntaxe générale :
+
+        <id_session> AC {nom_annuaire}<TAB>{contact}
+
+      Le paramètre contact est du format suivant :
+      Chaque champ d'un contact est séparé par un caractère ':'
+        name:surname:mail:[society]:[phone]:[prophone]:[address]:[birthday]:[other]
+      Si une option est manquante alors on laisse les ':' ce qui ferait
+        NOM:Prénom:AdresseMail@Mail.fr::9856349813:::02/09/1997:
+
+
+  3.8  Commande : MA (modifier compte utilisateur)
+
+      Cette commande demande au serveur de modifier le mot de passe de
+      l'utilisateur connecté.
+      Il faut spécifier l'ancien mot de passe et le nouveau pour pouvoir le
+      modifier.
+
+      Voici la syntaxe générale :
+
+        <id_session> MA {ancien_mdp}<TAB>{nouveau_mdp}
+
+
+  3.9  Commande : MR (modifier annuaire)
+
+      Cette commande modifier le nom d'un annuaire. On spécifie l'annuaire
+      à modifier et le nouveau nom que l'on veux. Il faut que l'annuaire existe et
+      que le nouveau nom de l'annuaire soit disponible.
+
+      Seul le propriétaire de l'annuaire peut modifier le nom de l'annuaire.
+
+      Voici la syntaxe générale :
+
+        <id_session> MR {ancien_nom}<TAB>{nouveau_nom}
+
+
+  3.10 Commande : MC (modifier contact)
+
+      Cette commande demande au serveur de modifier un contact dans un annuaire
+      spécifié.
+
+      Seul le propriétaire de l'annuaire peut modifier un contact.
+
+
+
+
+RFC SDAP - Annuaire Partagé - 2018                                     [Page 5 - 7]
+
+      Voici la syntaxe générale :
+
+        <id_session> MC {nom_annuaire}<TAB>{ancien_contact}<TAB>{nouveau_contact}
+
+      Seul les champs nom, prénom et mail sont essentiels pour identifier
+      l'ancien contact.
+
+      On a donc une requête du type :
+
+        34 MC Annuaire1<TAB>Nom:Prenom:Mail<TAB>Nom:Prenom:Nouveau_mail
+
+
+  3.11 Commande : DA (supprimer compte utilisateur)
+
+      Cette commande demande au serveur de supprimer le compte utilisateur
+      courant. Cette action entraine la fermeture de la session de l'utilisateur.
+      On spécifie le mot de passe pour confirmer la suppression du compte
+      utilisateur.
+
+      Voici la syntaxe générale :
+
+        <id_session> DA {mot_de_passe}
+
+
+  3.12 Commande : DR (supprimer annuaire)
+
+      Cette commande demande au serveur de supprimer l'annuaire spécifié.
+      La suppression de l'annuaire entraine la suppression de tout les contacts
+      de l'annuaire.
+
+      Seul le propriétaire de l'annuaire peut supprimer l'annuaire.
+
+      Voici la syntaxe générale :
+
+        <id_session> DR {annuaire}
+
+
+  3.13 Commande : DC (supprimer contact)
+
+      Cette commande demande au serveur de supprimer un contact dans un annuaire.
+
+      Seul le propriétaire de l'annuaire peut modifier un contact.
+
+      Voici la syntaxe générale :
+
+        <id_session> DC {nom_annuaire}<TAB>{contact}
+
+      Seul les champs nom, prénom et mail sont essentiels pour identifier
+      le contact.
+
+
+  4. Code de retour
+
+      Voici la liste des codes retour :
+
+      Code 200 : (Ok)
+        Ce code indique que tout s'est bien déroulé, l'action demandée à été
+        exécutée.
+
+      Code 400 :(Bad Request)
+        Ce code indique une mauvaise requête demandée au serveur. Un argument
+        manquant ou une commande qu'il sait pas traiter.
+
+      Code 401 : (Unauthorized)
+        Ce code indique que l'action demander n'est pas autorisée.
+
+
+RFC SDAP - Annuaire Partagé - 2018                                     [Page 6 - 7]
+
+      Code 404 : (Not Found)
+        Ce code indique que la ressource demandée n'est pas disponible.
+
+      Code 500 : (Server Error)
+        Ce code indique que le serveur à rencontré une erreur majeure lors de
+        l'éxécution de la requête.
+
+
+  5. Droits utilisateur
+
+      Chaque utilisateur à des droits spécifiques qui lui permettent d'exécuter
+      un jeu de commandes.
+
+  5.1  Utilisateur anonyme
+
+      Un utilisateur anonyme peut utiliser seulement les commandes de parcours
+      des annuaires.
+      Il peut donc chercher n'importe quel annuaire, à l'aide de la commande
+      "SR". Mais aussi il peut chercher les contacts d'un annuaire en particulier,
+      à l'aide de la commande "SC".
+      Un utilisateur anonyme a aussi la possibilité de crée un compte utilisateur,
+      à l'aide de la commande "AA".
+
+  5.2  Utilisateur identifié
+
+      Un utilisateur identifié possède un plus grand choix de commandes. Il peut
+      ainsi accéder à la gestion de son compte avec "MA" et "DA". Mais aussi la
+      gestion des annuaires avec "AR", "MR" et "DR". De même pour la gestion des
+      contacts des annuaires dont il est le propriétaire avec "AC", "MC" et "DC".
+  
+
+  6. Exemples
+
+  6.1  Connexion au serveur
+
+      Connexion annonyme :                  |  Connexion identifié :
+                                            |
+        Client   Serveur                    |    Client   Serveur
+          |         |                       |      |         |
+          | ------> | # O C                 |      | ------> | # O C Thomas<TAB>mdp
+          |         |                       |      |         |
+          | <------ | # 200 OK<TAB>1        |      | <------ | # 200 OK<TAB>36
+          |         |                       |      |         |
+                                            |
+
+  6.2  Echange de données
+
+      Recherche d'annuaire : (session déjà ouverte)
+
+            Client         Serveur
+               |              |
+               | -----------> | # O SR annu
+               |              |
+               | <----------- | # 200 OK<TAB>Annuaire1<TAB>Annuaire2
+               |              |
+
+      Suppression d'un contact dans un annuaire non propriétaire :
+
+            Client         Serveur
+               |              |
+               | -----------> | # O DR Annuaire1<TAB>nom:
+               |              |
+               | <----------- | # 401 Unauthorized
+               |              |
+
+
+
+RFC SDAP - Annuaire Partagé - 2018                                     [Page 7 - 7]
